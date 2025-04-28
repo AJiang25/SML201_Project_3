@@ -13,7 +13,7 @@ editor: visual
 Fill the vector `our_team` with the full names (First Last) of each team member. Although this task is worth no points, failing to complete this task will result in a one-point deduction.
 
 ```{r our_team}
-our_team = c('First Last')
+our_team = c('Arnold Jiang', 'John Woo', 'Willow Yang', 'Tong Dai')
 our_team
 ```
 
@@ -24,7 +24,7 @@ Fill the value `our_seed` with a calculated seed to precede all random sampling 
 ```{r our_seed}
 # calculate the seed to be the sum of the PUIDs of each teammate and then the remainder after dividing by 1746.
 # for example, if you have two teammates with PUIDs 888888888 & 999999999,
-our_seed = sum(888888888, 999999999) %% 1746
+our_seed = sum(920327399, 920400588, 920251660, 920293028) %% 1746
 ```
 
 ------------------------------------------------------------------------
@@ -93,7 +93,14 @@ Using the `ts_plays` data, find the `swiftie` for each of the categories below.
 ##### A1a. Most plays overall \[1 pt\]
 
 ```{r a1a}
+# there's actually two swiftie with the same amount of highest overall plays
+swiftie_most_plays <- ts_plays |>
+  group_by(swiftie) |>
+  summarise(total_plays = n()) |>
+  arrange(desc(total_plays)) |>
+  slice(1)
 
+swiftie_most_plays$swiftie
 ```
 
 ##### A1b. Most plays between 11:00:00 AM and 2:49:59 PM inclusive \[2 pts\]
