@@ -251,6 +251,65 @@ The graph must show arrows pointing toward the nodes to which a particular node 
 Use a color scheme similar to the wheel image above.
 
 ```{r b1}
+color_palette <- c("#8df1c7", 
+                   "#aaf499", 
+                   "#bae269", 
+                   "#e0d54f", 
+                   "#f8bb95", 
+                   "#fd8f9a", 
+                   "#ee7ec7", 
+                   "#e088e4",
+                   "#c28bf1",
+                   "#aabeee",
+                   "#72e0ee",
+                   "#60f1e7"
+                   )
+
+unique_nodes <- unique(camelot$from)
+
+nodes <- data.frame(
+  id = unique_nodes, 
+  label = unique_nodes, 
+  font.size = 10, 
+  shape='circle')
+
+nodes <- nodes %>%
+  mutate(
+    number = as.numeric(gsub("[[:alpha:]]", "", label)), 
+    letter = gsub("[^a-zA-Z]", "", label),
+    color = ifelse(letter == "A",
+                   paste0(color_palette[number], '99'),
+                   color_palette[number])
+  )
+
+nodesA <- nodes |>
+  filter(letter == 'A') |>
+  mutate(
+    x = 200 * cos((2 * pi * number) / 12),
+    y = 200 * sin((2 * pi * number) / 12)
+  )
+
+nodesB <- nodes |>
+  filter(letter == 'B') |>
+  mutate(
+    x = 300 * cos((2 * pi * number) / 12),
+    y = 300 * sin((2 * pi * number) / 12)
+  )
+
+edges <- data.frame(
+  from = camelot$from, 
+  to = camelot$to, 
+  type = camelot$type)
+
+
+visNetwork(rbind(nodesA, nodesB), 
+           edges, 
+           width = "100%",
+           main = "Camelot Wheel Graph Network") |>
+  visNodes(physics = FALSE) |> 
+  visEdges(arrows = "to") |>
+  visLayout(our_seed) 
+
 
 ```
 
@@ -266,6 +325,11 @@ Starting with a single song from tracks, create a list of **ten** songs such tha
 Use `gt` to display the setlist of songs.
 
 ```{r b2}
+
+start_song = tracks$song[our_seed]
+
+
+
 
 ```
 
