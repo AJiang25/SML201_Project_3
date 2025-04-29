@@ -94,11 +94,15 @@ Using the `ts_plays` data, find the `swiftie` for each of the categories below.
 
 ```{r a1a}
 # there's actually two swiftie with the same amount of highest overall plays
-swiftie_most_plays <- ts_plays |>
-  group_by(swiftie) |>
+biggest_swiftie = function(data) {
+  group_by(data, swiftie) |>
   summarise(total_plays = n()) |>
   arrange(desc(total_plays)) |>
   slice(1)
+}
+
+swiftie_most_plays = ts_plays |>
+  biggest_swiftie()
 
 swiftie_most_plays$swiftie
 ```
@@ -106,19 +110,46 @@ swiftie_most_plays$swiftie
 ##### A1b. Most plays between 11:00:00 AM and 2:49:59 PM inclusive \[2 pts\]
 
 ```{r a1b}
+swiftie_most_plays_time = ts_plays |>
+  mutate(play_time = format(as.POSIXct(play_dt), "%H:%M:%S")) |>
+  filter(play_time >= "11:00:00", play_time <="14:49:59") |>
+  biggest_swiftie()
 
+swiftie_most_plays_time$swiftie
 ```
 
 ##### A1c. Fewest plays of 'Cruel Summer' during the summer of 2024 \[3 pts\]
 
 ```{r a1c}
+smallest_swiftie = function(data) {
+  group_by(data, swiftie) |>
+  summarise(total_plays = n()) |>
+  arrange(total_plays) |>
+  slice(1)
+}
 
+swiftie_least_plays_cruel = ts_plays |>
+  filter(song == "Cruel Summer") |>
+  mutate(date = as.Date(play_dt)) |>
+  filter(date >= as.Date("2024-06-20"), date <= as.Date("2024-09-22")) |>
+  smallest_swiftie()
+
+swiftie_least_plays_cruel$swiftie
 ```
 
 ##### A1d. Least variance in monthly plays \[4 pts\]
 
 ```{r a1d}
+swiftie_least_var_month = ts_plays |>
+  mutate(month = format(as.Date(play_dt), "%Y-%m")) |>
+  group_by(swiftie, month) |>
+  summarize(monthly_plays = n(), .groups = "drop") |>
+  group_by(swiftie) |>
+  summarise(var_monthly_plays = var(monthly_plays), .groups = "drop") |>
+  arrange(var_monthly_plays) |>
+  slice(1)
 
+swiftie_least_var_month$swiftie
 ```
 
 ##### A1e. Greatest slope coefficient in the linear regression of daily plays (x = day of year, y = daily plays) during December \[5 pts\]
