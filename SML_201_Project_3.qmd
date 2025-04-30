@@ -169,13 +169,7 @@ dec_plays = ts_plays |>
 
 slopes = dec_plays |>
     group_by(swiftie) |>
-    summarize(
-        slope = 
-        if(n() > 1)
-            coef(lm(daily_plays ~ day))[2] 
-        else NA_real_
-    ) |>
-    filter(!is.na(slope)) |>
+    summarize(slope = coef(lm(daily_plays ~ day))[2]) |>
     arrange(desc(slope)) |>
     slice(1)
 
@@ -189,9 +183,36 @@ Create a vector (called `our_songs`) that contains your team's songs played (`so
 You can create functions to streamline the processes of this problem.
 
 ```{r a2}
+# Helper function for distance 
+euclid = function(songs1, songs2) {
+    all_songs = unique(c(songs1$song, songs2$song))
+    v1 = v2 = setNames(numeric(length(all_songs)), all_songs)
+    v1[songs1$song] = songs1$freq
+    v2[songs2$song] = songs2$freq
+    sqrt(sum((v1 - v2)^2))
+}
+
 our_songs = ts_plays |>
     filter(swiftie %in% our_team) |>
     count(song, name = "freq")
+
+other_songs = ts_plays |>
+    filter(!swiftie %in% our_team) |>
+    count(swiftie, song, name = "freq")
+
+swiftie_dist = other_songs |>
+    group_by(swiftie) |>
+    summarise(
+    dist = euclid(
+      our_songs,
+      tibble(song = song, freq = freq)
+    ),
+    .groups = "drop"
+    ) |>
+    arrange(dist)
+
+closest_swifties = swiftie_dist$swiftie[1:5]
+closest_swifties
 ```
 
 #### A3. Machine Learning Models \[*10 pts*\]
