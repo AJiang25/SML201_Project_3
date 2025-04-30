@@ -94,6 +94,8 @@ Using the `ts_plays` data, find the `swiftie` for each of the categories below.
 
 ```{r a1a}
 # there's actually two swiftie with the same amount of highest overall plays
+
+# Helper function for A1a and A1b
 biggest_swiftie = function(data) {
   group_by(data, swiftie) |>
   summarise(total_plays = n()) |>
@@ -141,7 +143,7 @@ swiftie_least_plays_cruel$swiftie
 
 ```{r a1d}
 swiftie_least_var_month = ts_plays |>
-  mutate(month = format(as.Date(play_dt), "%Y-%m")) |>
+  mutate(month = month(as.Date(play_dt))) |>
   group_by(swiftie, month) |>
   summarize(monthly_plays = n(), .groups = "drop") |>
   group_by(swiftie) |>
@@ -155,7 +157,29 @@ swiftie_least_var_month$swiftie
 ##### A1e. Greatest slope coefficient in the linear regression of daily plays (x = day of year, y = daily plays) during December \[5 pts\]
 
 ```{r a1e}
+dec_plays = ts_plays |>
+    mutate(
+        date = as.Date(play_dt),
+        month = month(as.Date(play_dt)),
+        day = yday(as.Date(play_dt))
+    ) |>
+    filter(month == 12) |>
+    group_by(swiftie, date, day) |>
+    summarize(daily_plays = n(), .groups = "drop")
 
+slopes = dec_plays |>
+    group_by(swiftie) |>
+    summarize(
+        slope = 
+        if(n() > 1)
+            coef(lm(daily_plays ~ day))[2] 
+        else NA_real_
+    ) |>
+    filter(!is.na(slope)) |>
+    arrange(desc(slope)) |>
+    slice(1)
+
+slopes$swiftie
 ```
 
 #### A2. Similar Swifties \[*10 pts*\]
@@ -165,7 +189,9 @@ Create a vector (called `our_songs`) that contains your team's songs played (`so
 You can create functions to streamline the processes of this problem.
 
 ```{r a2}
-
+our_songs = ts_plays |>
+    filter(swiftie %in% our_team) |>
+    count(song, name = "freq")
 ```
 
 #### A3. Machine Learning Models \[*10 pts*\]
@@ -178,7 +204,13 @@ Use an 80/20 split of train/test from `ts_plays` to train and test these models:
 Comment in the summary about the results of these models.
 
 ```{r a3 mod1}
+ts_plays2 = ts_plays |>
+    mutate(
 
+split = sample.split(XXX$num_plays, SplitRatio = 0.8)
+train = subset(XXX, split == TRUE)
+test = subset(XXX, split == FALSE)
+        
 ```
 
 ```{r a3 mod2}
