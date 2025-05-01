@@ -249,6 +249,24 @@ Use a significance of 0.05.
 Comment in the summary about your conclusions from this test.
 
 ```{r a4}
+set.seed(our_seed)
+swiftie_samples <- sample(ts_plays$swiftie, 25, replace=FALSE)
+
+love_story <- ts_plays |>
+  filter(swiftie %in% swiftie_samples & song == 'Love Story') |>
+  group_by(swiftie) |>
+  count(song)
+you_belong_with_me <- ts_plays |>
+  filter(swiftie %in% swiftie_samples & song == 'You Belong With Me') |>
+  group_by(swiftie) |>
+  count(song)
+love_story
+you_belong_with_me
+t.test(love_story$n, you_belong_with_me$n, var.equal = FALSE, alternative = "greater")
+
+paste("Reject Love Story plays more than You Belong With Me because p_val > 0.05")
+
+
 
 ```
 
@@ -378,8 +396,6 @@ Starting with a single song from tracks, create a list of **ten** songs such tha
 Use `gt` to display the setlist of songs.
 
 ```{r b2}
-
-start_song = tracks$song[our_seed]
 
 
 
