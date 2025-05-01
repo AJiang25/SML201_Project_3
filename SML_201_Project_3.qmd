@@ -99,12 +99,19 @@ Using the `ts_plays` data, find the `swiftie` for each of the categories below.
 biggest_swiftie = function(data) {
   group_by(data, swiftie) |>
   summarise(total_plays = n()) |>
-  arrange(desc(total_plays)) |>
-  slice(1)
+  arrange(desc(total_plays))
 }
 
 swiftie_most_plays = ts_plays |>
-  biggest_swiftie()
+  biggest_swiftie() 
+
+swiftie_most_plays
+
+most_plays = swiftie_most_plays$total_plays[1]
+
+swiftie_most_plays = swiftie_most_plays |>
+  filter(total_plays == most_plays)
+
 
 swiftie_most_plays$swiftie
 ```
@@ -117,26 +124,31 @@ swiftie_most_plays_time = ts_plays |>
   filter(play_time >= "11:00:00", play_time <="14:49:59") |>
   biggest_swiftie()
 
+most_plays_time = swiftie_most_plays_time$total_plays[1]
+
+swiftie_most_plays_time <- swiftie_most_plays_time |>
+  filter(total_plays == most_plays_time)
+
 swiftie_most_plays_time$swiftie
 ```
 
 ##### A1c. Fewest plays of 'Cruel Summer' during the summer of 2024 \[3 pts\]
 
 ```{r a1c}
-smallest_swiftie = function(data) {
-  group_by(data, swiftie) |>
-  summarise(total_plays = n()) |>
-  arrange(total_plays) |>
-  slice(1)
-}
-
 swiftie_least_plays_cruel = ts_plays |>
   filter(song == "Cruel Summer") |>
   mutate(date = as.Date(play_dt)) |>
   filter(date >= as.Date("2024-06-20"), date <= as.Date("2024-09-22")) |>
-  smallest_swiftie()
+  group_by(swiftie) |>
+  summarise(total_plays = n()) |>
+  arrange(total_plays)
 
-swiftie_least_plays_cruel$swiftie
+least_plays = swiftie_least_plays_cruel$total_plays[1]
+
+least_cruel_summer_swiftie = swiftie_least_plays_cruel |>
+  filter(total_plays == least_plays)
+
+least_cruel_summer_swiftie$swiftie
 ```
 
 ##### A1d. Least variance in monthly plays \[4 pts\]
