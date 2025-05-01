@@ -244,7 +244,10 @@ y_train = train$num_plays
 x_test = as.matrix(test[, c("hour", "weekend")])
 y_test = test$num_plays
 
-model1 = cv.glmnet(x_train, y_train, alpha = 1)
+cv_model1 = cv.glmnet(x_train, y_train, alpha = 1)
+best_lambda = cv_model1$lambda.min
+
+model1 = glmnet(x, y, alpha = 1, lambda = best_lambda)
 pred1 = predict(model1, x_test, s = "lambda.min")
 mse1 = mean((y_test - pred1)^2)
 
@@ -253,8 +256,9 @@ mse1
 ```
 
 ```{r a3 mod2}
-model2 = cv.glmnet(x_train, y_train, alpha = 1)
-pred2 = predict(model2, x_test, s = "lambda.min")
+cv_model2 = cv.glmnet(x_train, y_train, alpha = 0)
+best_lambda2 = cv_model2$lambda.min
+pred2 = predict(model2, x_test, alpha = 0, lambda = best_lambda2)
 mse2 = mean((y_test - pred2)^2)
 
 model2
@@ -297,7 +301,7 @@ paste("Reject Love Story plays more than You Belong With Me because p_val > 0.05
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Summary
+> Looking at the outputs of both models, we observe that they achieved identical MSE values of approximately 0.04073, which suggests that both models are suitable. Both models show 0 nonzero coefficients, which suggests that neither the hour or weekend features were strong predictors of the play counts. The identical performance suggests that there might be a weak relationship between the predictors (hour and weekend) and the number of plays or there might be other more important features that are not included in the models. From the Hypothesis test we achieved a p-value of 0.2566 which is greater than the typical threshold of alpha = 0.05, which means we achieved a result that was significant enough to reject the null hypothesis that “Love Story” was played significantly more.
 
 ------------------------------------------------------------------------
 
