@@ -225,17 +225,40 @@ Use an 80/20 split of train/test from `ts_plays` to train and test these models:
 Comment in the summary about the results of these models.
 
 ```{r a3 mod1}
+set.seed(our_seed)
 ts_plays2 = ts_plays |>
     mutate(
+        date = as.Date(play_dt),
+        hour = as.integer(format(as.POSIXct(play_dt), "%H")),
+        weekend = as.integer(weekdays(as.Date(play_dt)) %in% c("Saturday", "Sunday"))
+    ) |>
+    group_by(swiftie, date, hour, weekend) |>
+    summarise(num_plays = n(), .groups = "drop")
 
-split = sample.split(XXX$num_plays, SplitRatio = 0.8)
-train = subset(XXX, split == TRUE)
-test = subset(XXX, split == FALSE)
-        
+split = sample.split(ts_plays2$num_plays, SplitRatio = 0.8)
+train = subset(ts_plays2, split == TRUE)
+test = subset(ts_plays2, split == FALSE)
+
+x_train = as.matrix(train[, c("hour", "weekend")])
+y_train = train$num_plays
+x_test = as.matrix(test[, c("hour", "weekend")])
+y_test = test$num_plays
+
+model1 = cv.glmnet(x_train, y_train, alpha = 1)
+pred1 = predict(model1, x_test, s = "lambda.min")
+mse1 = mean((y_test - pred1)^2)
+
+model1
+mse1
 ```
 
 ```{r a3 mod2}
+model2 = cv.glmnet(x_train, y_train, alpha = 1)
+pred2 = predict(model2, x_test, s = "lambda.min")
+mse2 = mean((y_test - pred2)^2)
 
+model2
+mse2
 ```
 
 #### A4. Hypothesis Test \[*10 pts*\]
