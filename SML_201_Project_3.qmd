@@ -417,7 +417,6 @@ edges <- data.frame(
   to = camelot$to, 
   type = camelot$type)
 
-
 visNetwork(rbind(nodesA, nodesB), 
            edges, 
            width = "100%",
@@ -425,7 +424,6 @@ visNetwork(rbind(nodesA, nodesB),
   visNodes(physics = FALSE) |> 
   visEdges(arrows = "to") |>
   visLayout(our_seed) 
-
 
 ```
 
@@ -436,13 +434,62 @@ Starting with a single song from tracks, create a list of **ten** songs such tha
 -   The next song must follow the Camelot Wheel rules.
 -   The next song must increase in energy from the prior song. Note that a rapid rise in energy will limit the availability of songs in the later songs yet to be determined.
 -   The next song must be one of the top 15 closest songs when measured by the Euclidean distance of danceability and happiness.
--   The smallest cosine similarity between any two songs in the setlist must be greater than 0.35. Cosine similarity must be measured using all of energy, danceability, and happiness.
+-   The smallest cosine similarity between any two songs in the setlist must be greater than 0.035. Cosine similarity must be measured using all of energy, danceability, and happiness.
 
 Use `gt` to display the setlist of songs.
 
 ```{r b2}
 
+# Helper Functions:
+euclid = function(x, y) {
+  sqrt((x$danceability - y$danceability)^2 + (x$happiness - y$happiness)^2)
+}
 
+cosine_sim = function(x, y) {
+  sum(x * y) / (sqrt(sum(x^2)) * sqrt(sum(y^2)))
+}
+
+generate_setlist = function(start) {
+  setlist = tracks |>
+    filter(artist == start$artist, song == start$song)
+  
+  while(nrow(setlist < 10)) {
+    cur = setlist[nrow(setlist), ]
+
+    valid_cmlt = camelot |>
+      filter(from == cur$cmlt) |>
+      pull(to)
+    
+    candidates = tracks |>
+      filter(
+        cmlt %in% valid_cmlt,
+        energy > cur$energy,
+        !(artist == cur$artist & song == cur$song),
+        !(paste(artist, song) %in% paste(setlist$artist, setlist$song))
+      )
+    if(nrow(candidates) == 0) break
+
+    candidates_dist = candidates |>
+      rowwise() |>
+      mutate(
+        dist = euclid(cur, pick(everything()))
+      ) |>
+      ungroup() |>
+      arrange(dist) |>
+      slice_head(n = 15)
+    
+    
+  }
+  setlist |> 
+    select(artist, song, energy, danceability, happiness, cmlt)
+}
+
+start = tracks |>
+  slice_sample(n = 1)
+
+start
+result = generate_setlist(start)
+gt(result)
 
 
 ```
