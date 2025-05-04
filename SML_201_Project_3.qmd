@@ -140,15 +140,11 @@ swiftie_least_plays_cruel = ts_plays |>
   mutate(date = as.Date(play_dt)) |>
   filter(date >= as.Date("2024-06-20"), date <= as.Date("2024-09-22")) |>
   group_by(swiftie) |>
-  summarise(total_plays = n()) |>
+  summarise(total_plays = n(), .groups = "drop") |>
   arrange(total_plays)
 
-least_plays = swiftie_least_plays_cruel$total_plays[1]
+swiftie_least_plays_cruel
 
-least_cruel_summer_swiftie = swiftie_least_plays_cruel |>
-  filter(total_plays == least_plays)
-
-least_cruel_summer_swiftie$swiftie
 ```
 
 ##### A1d. Least variance in monthly plays \[4 pts\]
@@ -238,14 +234,16 @@ Comment in the summary about the results of these models.
 
 ```{r a3 mod1}
 set.seed(our_seed)
+
 ts_plays2 = ts_plays |>
     mutate(
-        date = as.Date(play_dt),
         hour = as.integer(format(as.POSIXct(play_dt), "%H")),
         weekend = as.integer(weekdays(as.Date(play_dt)) %in% c("Saturday", "Sunday"))
     ) |>
-    group_by(swiftie, date, hour, weekend) |>
+    group_by(hour, weekend) |>
     summarise(num_plays = n(), .groups = "drop")
+
+ts_plays2
 
 split = sample.split(ts_plays2$num_plays, SplitRatio = 0.8)
 train = subset(ts_plays2, split == TRUE)
@@ -259,7 +257,7 @@ y_test = test$num_plays
 cv_model1 = cv.glmnet(x_train, y_train, alpha = 1)
 best_lambda = cv_model1$lambda.min
 
-model1 = glmnet(x, y, alpha = 1, lambda = best_lambda)
+model1 = glmnet(x_train, y_train, alpha = 1, lambda = best_lambda)
 pred1 = predict(model1, x_test, s = "lambda.min")
 mse1 = mean((y_test - pred1)^2)
 
@@ -270,6 +268,8 @@ mse1
 ```{r a3 mod2}
 cv_model2 = cv.glmnet(x_train, y_train, alpha = 0)
 best_lambda2 = cv_model2$lambda.min
+
+model2 = glmnet(x_train, y_train, alpha = 0, lambda = best_lambda2)
 pred2 = predict(model2, x_test, alpha = 0, lambda = best_lambda2)
 mse2 = mean((y_test - pred2)^2)
 
@@ -289,21 +289,23 @@ Comment in the summary about your conclusions from this test.
 
 ```{r a4}
 set.seed(our_seed)
-swiftie_samples <- sample(ts_plays$swiftie, 25, replace=FALSE)
 
-love_story <- ts_plays |>
-  filter(swiftie %in% swiftie_samples & song == 'Love Story') |>
-  group_by(swiftie) |>
-  count(song)
-you_belong_with_me <- ts_plays |>
-  filter(swiftie %in% swiftie_samples & song == 'You Belong With Me') |>
-  group_by(swiftie) |>
-  count(song)
-love_story
-you_belong_with_me
-t.test(love_story$n, you_belong_with_me$n, var.equal = FALSE, alternative = "greater")
+love_you = ts_plays |>
+  filter(song %in% c('Love Story', 'You Belong With Me')) |>
+  group_by(swiftie, song) |>
+  summarize(n = n(), .groups = "drop") |>
+  pivot_wider(names_from = song, values_from = n, values_fill = 0)
+love_you
+swiftie_samples = sample(love_you$swiftie, 25, replace=FALSE)
 
-paste("Reject Love Story plays more than You Belong With Me because p_val > 0.05")
+sampled = love_you |>
+  filter(swiftie %in% swiftie_samples)
+
+res = t.test(sampled$`Love Story`, sampled$`You Belong With Me`, 
+                        paired = TRUE, alternative = "greater")
+res
+
+paste("Fail to Reject the Null Hyptohesis that Love Story plays more than You Belong With Me because p_val < 0.05")
 
 
 
@@ -313,7 +315,11 @@ paste("Reject Love Story plays more than You Belong With Me because p_val > 0.05
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Looking at the outputs of both models, we observe that they achieved identical MSE values of approximately 0.04073, which suggests that both models are suitable. Both models show 0 nonzero coefficients, which suggests that neither the hour or weekend features were strong predictors of the play counts. The identical performance suggests that there might be a weak relationship between the predictors (hour and weekend) and the number of plays or there might be other more important features that are not included in the models. From the Hypothesis test we achieved a p-value of 0.2566 which is greater than the typical threshold of alpha = 0.05, which means we achieved a result that was significant enough to reject the null hypothesis that “Love Story” was played significantly more.
+> Looking at the outputs of both models in A3, we observe that the lasso regression
+model (model1) achieved a lower MSE of ~2033.56 while the ridge regression model 
+(model2) achieved a higher MSE score of ~11392.65. This suggests that the lasso
+regression model was a better for predicting the number of plays where hours and 
+weekend are used as the predictors. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
 
 ------------------------------------------------------------------------
 
