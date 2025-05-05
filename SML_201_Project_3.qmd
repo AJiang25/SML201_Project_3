@@ -135,16 +135,24 @@ swiftie_most_plays_time$swiftie
 ##### A1c. Fewest plays of 'Cruel Summer' during the summer of 2024 \[3 pts\]
 
 ```{r a1c}
-swiftie_least_plays_cruel = ts_plays |>
+swifties = ts_plays |>
+  distinct(swiftie)
+
+cruel_summer_plays = ts_plays |>
   filter(song == "Cruel Summer") |>
   mutate(date = as.Date(play_dt)) |>
   filter(date >= as.Date("2024-06-20"), date <= as.Date("2024-09-22")) |>
   group_by(swiftie) |>
-  summarise(total_plays = n(), .groups = "drop") |>
-  arrange(total_plays)
+  summarise(total_plays = n(), .groups = "drop")
 
-swiftie_least_plays_cruel
+# account for the fact that there are 0 plays too
+swiftie_least_plays_cruel = swifties |>
+  left_join(cruel_summer_plays, by = "swiftie") |>
+  mutate(total_plays = replace_na(total_plays, 0)) |>
+  arrange(total_plays) |>
+  slice_head(n = 5)
 
+swiftie_least_plays_cruel$swiftie
 ```
 
 ##### A1d. Least variance in monthly plays \[4 pts\]
