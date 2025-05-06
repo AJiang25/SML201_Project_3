@@ -94,15 +94,24 @@ Using the `ts_plays` data, find the `swiftie` for each of the categories below.
 
 ```{r a1a}
 # there's actually two swiftie with the same amount of highest overall plays
+
+# Helper function for A1a and A1b
 biggest_swiftie = function(data) {
   group_by(data, swiftie) |>
   summarise(total_plays = n()) |>
-  arrange(desc(total_plays)) |>
-  slice(1)
+  arrange(desc(total_plays))
 }
 
 swiftie_most_plays = ts_plays |>
-  biggest_swiftie()
+  biggest_swiftie() 
+
+swiftie_most_plays
+
+most_plays = swiftie_most_plays$total_plays[1]
+
+swiftie_most_plays = swiftie_most_plays |>
+  filter(total_plays == most_plays)
+
 
 swiftie_most_plays$swiftie
 ```
@@ -115,24 +124,33 @@ swiftie_most_plays_time = ts_plays |>
   filter(play_time >= "11:00:00", play_time <="14:49:59") |>
   biggest_swiftie()
 
+most_plays_time = swiftie_most_plays_time$total_plays[1]
+
+swiftie_most_plays_time <- swiftie_most_plays_time |>
+  filter(total_plays == most_plays_time)
+
 swiftie_most_plays_time$swiftie
 ```
 
 ##### A1c. Fewest plays of 'Cruel Summer' during the summer of 2024 \[3 pts\]
 
 ```{r a1c}
-smallest_swiftie = function(data) {
-  group_by(data, swiftie) |>
-  summarise(total_plays = n()) |>
-  arrange(total_plays) |>
-  slice(1)
-}
+swifties = ts_plays |>
+  distinct(swiftie)
 
-swiftie_least_plays_cruel = ts_plays |>
+cruel_summer_plays = ts_plays |>
   filter(song == "Cruel Summer") |>
   mutate(date = as.Date(play_dt)) |>
   filter(date >= as.Date("2024-06-20"), date <= as.Date("2024-09-22")) |>
-  smallest_swiftie()
+  group_by(swiftie) |>
+  summarise(total_plays = n(), .groups = "drop")
+
+# account for the fact that there are 0 plays too
+swiftie_least_plays_cruel = swifties |>
+  left_join(cruel_summer_plays, by = "swiftie") |>
+  mutate(total_plays = replace_na(total_plays, 0)) |>
+  arrange(total_plays) |>
+  slice_head(n = 5)
 
 swiftie_least_plays_cruel$swiftie
 ```
@@ -141,7 +159,7 @@ swiftie_least_plays_cruel$swiftie
 
 ```{r a1d}
 swiftie_least_var_month = ts_plays |>
-  mutate(month = format(as.Date(play_dt), "%Y-%m")) |>
+  mutate(month = month(as.Date(play_dt))) |>
   group_by(swiftie, month) |>
   summarize(monthly_plays = n(), .groups = "drop") |>
   group_by(swiftie) |>
@@ -155,7 +173,23 @@ swiftie_least_var_month$swiftie
 ##### A1e. Greatest slope coefficient in the linear regression of daily plays (x = day of year, y = daily plays) during December \[5 pts\]
 
 ```{r a1e}
+dec_plays = ts_plays |>
+    mutate(
+        date = as.Date(play_dt),
+        month = month(as.Date(play_dt)),
+        day = yday(as.Date(play_dt))
+    ) |>
+    filter(month == 12) |>
+    group_by(swiftie, date, day) |>
+    summarize(daily_plays = n(), .groups = "drop")
 
+slopes = dec_plays |>
+    group_by(swiftie) |>
+    summarize(slope = coef(lm(daily_plays ~ day))[2]) |>
+    arrange(desc(slope)) |>
+    slice(1)
+
+slopes$swiftie
 ```
 
 #### A2. Similar Swifties \[*10 pts*\]
@@ -165,7 +199,36 @@ Create a vector (called `our_songs`) that contains your team's songs played (`so
 You can create functions to streamline the processes of this problem.
 
 ```{r a2}
+# Helper function for distance 
+euclid = function(songs1, songs2) {
+    all_songs = unique(c(songs1$song, songs2$song))
+    v1 = v2 = setNames(numeric(length(all_songs)), all_songs)
+    v1[songs1$song] = songs1$freq
+    v2[songs2$song] = songs2$freq
+    sqrt(sum((v1 - v2)^2))
+}
 
+our_songs = ts_plays |>
+    filter(swiftie %in% our_team) |>
+    count(song, name = "freq")
+
+other_songs = ts_plays |>
+    filter(!swiftie %in% our_team) |>
+    count(swiftie, song, name = "freq")
+
+swiftie_dist = other_songs |>
+    group_by(swiftie) |>
+    summarise(
+    dist = euclid(
+      our_songs,
+      tibble(song = song, freq = freq)
+    ),
+    .groups = "drop"
+    ) |>
+    arrange(dist)
+
+closest_swifties = swiftie_dist$swiftie[1:5]
+closest_swifties
 ```
 
 #### A3. Machine Learning Models \[*10 pts*\]
@@ -178,11 +241,48 @@ Use an 80/20 split of train/test from `ts_plays` to train and test these models:
 Comment in the summary about the results of these models.
 
 ```{r a3 mod1}
+set.seed(our_seed)
 
+ts_plays2 = ts_plays |>
+    mutate(
+        hour = as.integer(format(as.POSIXct(play_dt), "%H")),
+        weekend = as.integer(weekdays(as.Date(play_dt)) %in% c("Saturday", "Sunday"))
+    ) |>
+    group_by(hour, weekend) |>
+    summarise(num_plays = n(), .groups = "drop")
+
+ts_plays2
+
+split = sample.split(ts_plays2$num_plays, SplitRatio = 0.8)
+train = subset(ts_plays2, split == TRUE)
+test = subset(ts_plays2, split == FALSE)
+
+x_train = as.matrix(train[, c("hour", "weekend")])
+y_train = train$num_plays
+x_test = as.matrix(test[, c("hour", "weekend")])
+y_test = test$num_plays
+
+cv_model1 = cv.glmnet(x_train, y_train, alpha = 1)
+best_lambda = cv_model1$lambda.min
+
+model1 = glmnet(x_train, y_train, alpha = 1, lambda = best_lambda)
+pred1 = predict(model1, x_test, s = "lambda.min")
+mse1 = mean((y_test - pred1)^2)
+
+model1
+mse1
 ```
 
 ```{r a3 mod2}
+cv_model2 = cv.glmnet(x_train, y_train, alpha = 0)
+best_lambda2 = cv_model2$lambda.min
 
+model2 = glmnet(x_train, y_train, alpha = 0, lambda = best_lambda2)
+pred2 = predict(model2, x_test, alpha = 0, lambda = best_lambda2)
+mse2 = mean((y_test - pred2)^2)
+
+model2
+mse2
 ```
 
 #### A4. Hypothesis Test \[*10 pts*\]
@@ -196,6 +296,26 @@ Use a significance of 0.05.
 Comment in the summary about your conclusions from this test.
 
 ```{r a4}
+set.seed(our_seed)
+
+love_you = ts_plays |>
+  filter(song %in% c('Love Story', 'You Belong With Me')) |>
+  group_by(swiftie, song) |>
+  summarize(n = n(), .groups = "drop") |>
+  pivot_wider(names_from = song, values_from = n, values_fill = 0)
+love_you
+swiftie_samples = sample(love_you$swiftie, 25, replace=FALSE)
+
+sampled = love_you |>
+  filter(swiftie %in% swiftie_samples)
+
+res = t.test(sampled$`Love Story`, sampled$`You Belong With Me`, 
+                        paired = TRUE, alternative = "greater")
+res
+
+paste("Fail to Reject the Null Hyptohesis that Love Story plays more than You Belong With Me because p_val < 0.05")
+
+
 
 
 ```
@@ -204,7 +324,11 @@ Comment in the summary about your conclusions from this test.
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Summary
+> Looking at the outputs of both models in A3, we observe that the lasso regression
+model (model1) achieved a lower MSE of ~2033.56 while the ridge regression model 
+(model2) achieved a higher MSE score of ~11392.65. This suggests that the lasso
+regression model was a better for predicting the number of plays where hours and 
+weekend are used as the predictors. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
 
 ------------------------------------------------------------------------
 
@@ -302,7 +426,6 @@ edges <- data.frame(
   to = camelot$to, 
   type = camelot$type)
 
-
 visNetwork(rbind(nodesA, nodesB), 
            edges, 
            width = "100%",
@@ -310,7 +433,6 @@ visNetwork(rbind(nodesA, nodesB),
   visNodes(physics = FALSE) |> 
   visEdges(arrows = "to") |>
   visLayout(our_seed) 
-
 
 ```
 
