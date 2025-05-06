@@ -665,7 +665,7 @@ generate_chart(initial_song, get_recommended_track(initial_song))
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Summary
+> For B2, when we filtered through the songs that are one of the top 15 closest measured by the Euclidean distance of danceability and happiness, we also took into account the increase in energy, prioritizing the least amount of increase in energy. In addition, we noticed that the songs that were one of the top 15 closest songs when measured by the Euclidean distance of danceability and happiness often had high cosine similarities. This correlation makes sense to us because songs that are close in two dimensions (danceability and happiness) are likely to be close in overall direction when energy is also factored in. From the possible tracks that we can append to our setlist, we chose the one that had the highest cosine similarity. For B3, we noticed that our recommended track shared the same name as another track by a different artist, and to resolve this conflict, we modified the ts_video function to only play music videos of Taylor Swift. We chose our recommended track based on the closest Euclidean distance and the highest cosine similarity of three dimensions (danceability, happiness, and energy). As a result, our graph shows a significant overlap between the initial and recommended tracks with closely aligned values across the three dimensions, and this reflects a close match in both proximity numerically and overall vibe for the initial and recommended tracks.
 
 ------------------------------------------------------------------------
 
