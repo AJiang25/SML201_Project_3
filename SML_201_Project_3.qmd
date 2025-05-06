@@ -197,6 +197,7 @@ Comment in the summary about your conclusions from this test.
 
 ```{r a4}
 
+
 ```
 
 #### A5. Summary \[*5 pts*\]
@@ -320,17 +321,107 @@ Starting with a single song from tracks, create a list of **ten** songs such tha
 -   The next song must follow the Camelot Wheel rules.
 -   The next song must increase in energy from the prior song. Note that a rapid rise in energy will limit the availability of songs in the later songs yet to be determined.
 -   The next song must be one of the top 15 closest songs when measured by the Euclidean distance of danceability and happiness.
--   The smallest cosine similarity between any two songs in the setlist must be greater than 0.35. Cosine similarity must be measured using all of energy, danceability, and happiness.
+-   The smallest cosine similarity between any two songs in the setlist must be greater than 0.035. Cosine similarity must be measured using all of energy, danceability, and happiness.
 
 Use `gt` to display the setlist of songs.
 
 ```{r b2}
 
-start_song = tracks$song[our_seed]
+cmlts <- function(given_song) {
+  song_key <- tracks |>
+    filter(song == given_song) |>
+    pull(cmlt)
+  to_keys <- camelot |>
+    filter(from == song_key) |>
+    pull(to)
+  return(to_keys)
+}
 
+euclidean_dist <- function(given_song, data) {
+  euclidean_dist <- data |>
+    rowwise() |>
+    mutate(dist = sqrt((given_song$danceability - danceability)^2 + (given_song$happiness - happiness)^2)) |>
+    arrange(energy, dist) |>
+    head(15)
+  
+  return(euclidean_dist)
+}
 
+cosine_similarity <- function(given_song, data) {
+  a <- given_song[, c("energy", "danceability", "happiness")]
 
+  cos_sim <- data |>
+    rowwise() |>
+    mutate(num = (a$energy * energy) + 
+             (a$danceability * danceability) + 
+             (a$happiness * happiness),
+           den = sqrt(a$energy^2 + a$danceability^2 + a$happiness^2) 
+              * sqrt(energy^2 + danceability^2 + happiness^2))
+  cos_sim <- cos_sim |>
+    mutate(sim = num / den) |>
+    filter(sim > 0.035) 
+  return(cos_sim)
+}
 
+find_next = function(given_song) {
+  song_data <- tracks |>
+    filter(song == given_song)
+
+  possible_cmlts <- cmlts(given_song)
+  possible_cmlt_tracks <- tracks |>
+    filter(cmlt %in% possible_cmlts)
+
+  possible_energy_tracks <- possible_cmlt_tracks |>
+    filter(energy > song_data$energy) |>
+    arrange(energy)
+
+  possible_euclidean_tracks <- euclidean_dist(song_data, possible_energy_tracks)
+
+  possible_cos_tracks <- cosine_similarity(song_data, possible_euclidean_tracks)
+
+  final_choice <- possible_cos_tracks |>
+    head(1) |>
+    select(artist, song, energy, danceability, happiness, cmlt, vid)
+  
+  return(final_choice)
+}
+
+generate_setlist <- function() {
+  setlist <- data.frame()
+  song_data <- tracks |>
+    slice(our_seed)
+
+  setlist <- rbind(setlist, song_data)
+
+  for (i in 1:9) {
+    next_song <- find_next(song_data$song)
+    setlist <- rbind(setlist, next_song)
+    song_data <- next_song
+  }
+  
+  setlist <- setlist |>
+    mutate(trk = row_number()) |>
+    select(trk, artist, song, energy, danceability, happiness, cmlt)
+  return(setlist)
+}
+
+generate_setlist() |>
+  gt() |>
+  cols_label(
+    trk = "Track No.",
+    artist = "Artist",
+    song = "Song",
+    energy = "Energy",
+    danceability = "Danceability",
+    happiness = "Happiness",
+    cmlt = "Camelot Key"
+  ) |>
+  tab_header(
+    title = "Setlist",
+    subtitle = paste("Start Song:", tracks$song[our_seed])
+  ) |>
+  opt_stylize(6, color="cyan")
+  
 ```
 
 #### B3. Next Taylor Music Video \[*20 pts*\]
