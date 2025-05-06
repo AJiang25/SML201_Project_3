@@ -324,11 +324,7 @@ paste("Fail to Reject the Null Hyptohesis that Love Story plays more than You Be
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Looking at the outputs of both models in A3, we observe that the lasso regression
-model (model1) achieved a lower MSE of ~2033.56 while the ridge regression model 
-(model2) achieved a higher MSE score of ~11392.65. This suggests that the lasso
-regression model was a better for predicting the number of plays where hours and 
-weekend are used as the predictors. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
+> Looking at the outputs of both models in A3, we observe that the lasso regression model (model1) achieved a lower MSE of \~2033.56 while the ridge regression model (model2) achieved a higher MSE score of \~11392.65. This suggests that the lasso regression model was a better for predicting the number of plays where hours and weekend are used as the predictors. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
 
 ------------------------------------------------------------------------
 
@@ -557,10 +553,9 @@ It is recommended that you generate a chart (using `highcharter`) to visualize t
 Points will be awarded for the creativity in the usage of the data to recommend the next song.
 
 ```{r b30}
-
 ts_video = function(s) {
   # find song in tracks
-  ss = tracks |> filter(song == s)
+  ss = tracks |> filter(song == s, artist == "Taylor Swift") 
   # create container to display video player
   player = div(
     align = 'center',
@@ -581,9 +576,89 @@ ts_video = function(s) {
 ```
 
 ```{r b3}
+set.seed(our_seed)
+get_initial_song <- function() {
+  ts_data <- tracks |>
+    filter(artist == "Taylor Swift") 
+  
+  return(sample(ts_data$song, 1))
+}
 
-# example of a video play
-ts_video('ME!')
+initial_song <- get_initial_song()
+
+get_song_data <- function(song_name) {
+  song_data <- tracks |>
+    filter(song == song_name)
+  return(song_data)
+}
+
+get_recommended_track <- function(initial_song) {
+  song_data <- get_song_data(initial_song)
+  
+  ts_data <- tracks |>
+    filter(artist == "Taylor Swift") |>
+    filter(song != initial_song)
+  
+  recommended_track <- cosine_similarity(song_data, ts_data) |>
+    mutate(euclidean_dist =
+             sqrt((song_data$danceability - danceability)^2 +
+                    (song_data$happiness - happiness)^2 +
+                    (song_data$energy - energy)^2 )) |>
+    arrange(euclidean_dist, desc(sim)) |>
+    head(1)
+
+  return(recommended_track)
+}
+
+next_vid <- function(initial_song) {
+  recommended_track <- get_recommended_track(initial_song) 
+  
+  ts_video(recommended_track$song)
+}
+
+generate_chart <- function(initial_song, recommended_track) {
+  song_data <- get_song_data(initial_song)
+  
+  hc <- highchart() |>
+    hc_chart(polar = TRUE, type = "line") |>
+    hc_title(text = "Initial vs Recommended Track") |>
+    hc_xAxis(categories = c("Happiness", "Energy", "Danceability"),
+           tickmarkPlacement = "on",
+           lineWidth = 1,
+           gridLineWidth = 1
+           ) |>
+    hc_yAxis(gridLineInterpolation = "circle",
+             lineWidth = 1,
+             gridLineWidth = 1,
+             tickInterval = 25,
+             min = 0,
+             max = 100
+             ) |>
+    hc_series(
+      list(
+        name = "Initial",
+        data = as.numeric(song_data[, c("happiness", "energy", "danceability")]),
+        pointPlacement = "on",
+        type = "area",
+        color = "red",
+        fillOpacity = 0.3
+      ),
+      list(
+        name = "Recommended",
+        data = as.numeric(recommended_track[, c("happiness", "energy", "danceability")]),
+        pointPlacement = "on",
+        type = "area",
+        color = "blue",
+        fillOpacity = 0.3
+      )
+    )
+  
+  return(hc)
+}
+
+ts_video(initial_song)
+next_vid(initial_song)
+generate_chart(initial_song, get_recommended_track(initial_song))
 ```
 
 #### B4. Summary \[*5 pts*\]
