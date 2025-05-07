@@ -93,8 +93,6 @@ Using the `ts_plays` data, find the `swiftie` for each of the categories below.
 ##### A1a. Most plays overall \[1 pt\]
 
 ```{r a1a}
-# there's actually two swiftie with the same amount of highest overall plays
-
 # Helper function for A1a and A1b
 biggest_swiftie = function(data) {
   group_by(data, swiftie) |>
@@ -251,38 +249,45 @@ ts_plays2 = ts_plays |>
     group_by(hour, weekend) |>
     summarise(num_plays = n(), .groups = "drop")
 
-ts_plays2
+# ts_plays2
 
 split = sample.split(ts_plays2$num_plays, SplitRatio = 0.8)
 train = subset(ts_plays2, split == TRUE)
 test = subset(ts_plays2, split == FALSE)
+y = train$num_plays
+x = data.matrix(train[, c("hour", "weekend")])
 
-x_train = as.matrix(train[, c("hour", "weekend")])
-y_train = train$num_plays
-x_test = as.matrix(test[, c("hour", "weekend")])
-y_test = test$num_plays
-
-cv_model1 = cv.glmnet(x_train, y_train, alpha = 1)
+cv_model1 = cv.glmnet(x, y, alpha = 1, nfolds = 10)
 best_lambda = cv_model1$lambda.min
+model1 = glmnet(x, y, alpha = 1, lambda = best_lambda)
+coef1 = as.vector(coef(model1))
+coef1
+plot(cv_model1)
 
-model1 = glmnet(x_train, y_train, alpha = 1, lambda = best_lambda)
-pred1 = predict(model1, x_test, s = "lambda.min")
-mse1 = mean((y_test - pred1)^2)
+pred1 = coef1[2:3] * test[, c("hour", "weekend")] |>
+  mutate(pred = coef1[1] + hour + weekend)
 
-model1
-mse1
+mse1 = mean((test$num_plays - pred1$pred)^2)
+
+paste("MSE for Lasso Model:", mse1)
+
+
 ```
 
 ```{r a3 mod2}
-cv_model2 = cv.glmnet(x_train, y_train, alpha = 0)
+cv_model2 = cv.glmnet(x, y, alpha = 0, nfolds = 10)
 best_lambda2 = cv_model2$lambda.min
+model2 = glmnet(x, y, alpha = 0, lambda = best_lambda2)
+coef2 = as.vector(coef(model2))
+coef2
+plot(cv_model2)
 
-model2 = glmnet(x_train, y_train, alpha = 0, lambda = best_lambda2)
-pred2 = predict(model2, x_test, alpha = 0, lambda = best_lambda2)
-mse2 = mean((y_test - pred2)^2)
 
-model2
-mse2
+pred2 = coef2[2:3] * test[, c("hour", "weekend")] |>
+  mutate(pred = coef2[1] + hour + weekend)
+mse2 = mean((test$num_plays - pred2$pred)^2)
+paste("MSE for Ridge Model:", mse2)
+
 ```
 
 #### A4. Hypothesis Test \[*10 pts*\]
@@ -324,7 +329,7 @@ paste("Fail to Reject the Null Hyptohesis that Love Story plays more than You Be
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Looking at the outputs of both models in A3, we observe that the lasso regression model (model1) achieved a lower MSE of \~2033.56 while the ridge regression model (model2) achieved a higher MSE score of \~11392.65. This suggests that the lasso regression model was a better for predicting the number of plays where hours and weekend are used as the predictors. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
+> Looking at the outputs of both models in A3, we observe that the ridge regression model (model2) achieved a lower MSE compared to the lasso ridge model (model1). This suggests that the ridge regression model performed better in predicting the number of plays when hours and weekend are used as the predictors. Since Ridge regression generally handles multicollinearity and distributes coefficient weights more evenly than Lasso regression, we can infer that both the predictors (weekend and hours) might be influential in contributing to the model. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
 
 ------------------------------------------------------------------------
 
