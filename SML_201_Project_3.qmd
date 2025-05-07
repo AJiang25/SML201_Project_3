@@ -316,43 +316,43 @@ Comment in the summary about your conclusions from this test.
 ```{r a4}
 set.seed(our_seed)
 
-# # H_0: mu_D = 0
-# # H_a: mu_D > 0
-# # Suppose mu_D = the mean difference between the number of plays of "Love Story and the number of plays of "You Belong With Me"
-# 
-# ts_sample_5 <- ts_plays |>
-#   filter(song %in% c('Love Story', 'You Belong With Me')) |>
-#   group_by(swiftie, song) |>
-#   summarize(play_count = n(), .groups = 'drop') |>
-#   pivot_wider(names_from = song, values_from = play_count, values_fill = 0) |>
-#   mutate(difference = `Love Story` - `You Belong With Me`) |>
-#   slice_sample(n = 25) |>
-#   pull(difference)
-# 
-# mean = mean(ts_sample_5)
-# sd = sd(ts_sample_5)
-# t = (mean - 0) / (sd / sqrt(25))
-# t
-# 
-# p_value <- pt(t, 25-1, lower.tail = FALSE)
-# p_value
-# 
-# t.test(ts_sample_5 - 0, alternative = "greater")
+# H_0: mu_D = 0
+# H_a: mu_D > 0
+# Suppose mu_D = the mean difference between the number of plays of "Love Story and the number of plays of "You Belong With Me"
 
-love_you = ts_plays |>
+ts_sample_5 <- ts_plays |>
   filter(song %in% c('Love Story', 'You Belong With Me')) |>
   group_by(swiftie, song) |>
-  summarize(n = n(), .groups = "drop") |>
-  pivot_wider(names_from = song, values_from = n, values_fill = 0)
-love_you
-swiftie_samples = sample(love_you$swiftie, 25, replace=FALSE)
+  summarize(play_count = n(), .groups = 'drop') |>
+  pivot_wider(names_from = song, values_from = play_count, values_fill = 0) |>
+  mutate(difference = `Love Story` - `You Belong With Me`) |>
+  slice_sample(n = 25) |>
+  pull(difference)
 
-sampled = love_you |>
-  filter(swiftie %in% swiftie_samples)
+mean = mean(ts_sample_5)
+sd = sd(ts_sample_5)
+t = (mean - 0) / (sd / sqrt(25))
+t
 
-res = t.test(sampled$`Love Story`, sampled$`You Belong With Me`, 
-                        paired = TRUE, alternative = "greater")
-res
+p_value <- pt(t, 25-1, lower.tail = FALSE)
+p_value
+
+t.test(ts_sample_5 - 0, alternative = "greater")
+
+# love_you = ts_plays |>
+#   filter(song %in% c('Love Story', 'You Belong With Me')) |>
+#   group_by(swiftie, song) |>
+#   summarize(n = n(), .groups = "drop") |>
+#   pivot_wider(names_from = song, values_from = n, values_fill = 0)
+# love_you
+# swiftie_samples = sample(love_you$swiftie, 25, replace=FALSE)
+# 
+# sampled = love_you |>
+#   filter(swiftie %in% swiftie_samples)
+# 
+# res = t.test(sampled$`Love Story`, sampled$`You Belong With Me`, 
+#                         paired = TRUE, alternative = "greater")
+# res
 
 paste("Since the p-value (0.03167) is less than the alpha value (0.05), we reject the null hypothesis. From this, we can infer Love Story is likely to be played more than You Belong With Me.")
 
