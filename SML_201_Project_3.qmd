@@ -316,6 +316,29 @@ Comment in the summary about your conclusions from this test.
 ```{r a4}
 set.seed(our_seed)
 
+# # H_0: mu_D = 0
+# # H_a: mu_D > 0
+# # Suppose mu_D = the mean difference between the number of plays of "Love Story and the number of plays of "You Belong With Me"
+# 
+# ts_sample_5 <- ts_plays |>
+#   filter(song %in% c('Love Story', 'You Belong With Me')) |>
+#   group_by(swiftie, song) |>
+#   summarize(play_count = n(), .groups = 'drop') |>
+#   pivot_wider(names_from = song, values_from = play_count, values_fill = 0) |>
+#   mutate(difference = `Love Story` - `You Belong With Me`) |>
+#   slice_sample(n = 25) |>
+#   pull(difference)
+# 
+# mean = mean(ts_sample_5)
+# sd = sd(ts_sample_5)
+# t = (mean - 0) / (sd / sqrt(25))
+# t
+# 
+# p_value <- pt(t, 25-1, lower.tail = FALSE)
+# p_value
+# 
+# t.test(ts_sample_5 - 0, alternative = "greater")
+
 love_you = ts_plays |>
   filter(song %in% c('Love Story', 'You Belong With Me')) |>
   group_by(swiftie, song) |>
@@ -331,10 +354,7 @@ res = t.test(sampled$`Love Story`, sampled$`You Belong With Me`,
                         paired = TRUE, alternative = "greater")
 res
 
-paste("Fail to Reject the Null Hyptohesis that Love Story plays more than You Belong With Me because p_val < 0.05")
-
-
-
+paste("Since the p-value (0.03167) is less than the alpha value (0.05), we reject the null hypothesis. From this, we can infer Love Story is likely to be played more than You Belong With Me.")
 
 ```
 
@@ -342,7 +362,7 @@ paste("Fail to Reject the Null Hyptohesis that Love Story plays more than You Be
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Looking at the outputs of both models in A3, we observe that the lasso regression model (model1) achieved a lower MSE compared to the ridge ridge model (model2). This suggests that the lasso regression model performed better in predicting the number of plays when hours and weekend are used as the predictors. Since lasso regression generally shrinks less informative predictors to zero, this suggests that either “weekend” or “hour” has relatively little influence on predicting the number of plays compared to the other. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
+> Looking at the outputs of both models in A3, we observe that the lasso regression model (model1) achieved a lower MSE compared to the ridge ridge model (model2). This suggests that the lasso regression model performed better in predicting the number of plays when hours and weekend are used as the predictors. Since lasso regression generally shrinks less informative predictors to zero, this suggests that either “weekend” or “hour” has relatively little influence on predicting the number of plays compared to the other. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was statistically significant. Thus, we can reject the null hypothesis and infer a conclusion such that that “Love Story” is significantly likely to be played more than "You Belong With Me."
 
 ------------------------------------------------------------------------
 
