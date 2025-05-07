@@ -264,10 +264,15 @@ coef1 = as.vector(coef(model1))
 coef1
 plot(cv_model1)
 
-pred1 = coef1[2:3] * test[, c("hour", "weekend")] |>
-  mutate(pred = coef1[1] + hour + weekend)
+pred1 <- data.frame(
+  hr = coef1[2] * test[,"hour"],
+  wknd = coef1[3] * test[,"weekend"],
+  intercept = coef1[1]
+  )
+pred1$pred <- rowSums(pred1)
 
 mse1 = mean((test$num_plays - pred1$pred)^2)
+mse1
 
 paste("MSE for Lasso Model:", mse1)
 
@@ -282,10 +287,18 @@ coef2 = as.vector(coef(model2))
 coef2
 plot(cv_model2)
 
+pred2 <- data.frame(
+  hr = coef2[2] * test[,"hour"],
+  wknd = coef2[3] * test[,"weekend"],
+  intercept = coef2[1]
+  )
+pred2$pred <- rowSums(pred2)
+pred2
+test$num_plays
 
-pred2 = coef2[2:3] * test[, c("hour", "weekend")] |>
-  mutate(pred = coef2[1] + hour + weekend)
 mse2 = mean((test$num_plays - pred2$pred)^2)
+mse2
+
 paste("MSE for Ridge Model:", mse2)
 
 ```
@@ -329,7 +342,7 @@ paste("Fail to Reject the Null Hyptohesis that Love Story plays more than You Be
 
 Write a concluding paragraph on your observations during the completion of this section. Contain all your words within the blockquote below by replacing the word 'Summary' with your text.
 
-> Looking at the outputs of both models in A3, we observe that the ridge regression model (model2) achieved a lower MSE compared to the lasso ridge model (model1). This suggests that the ridge regression model performed better in predicting the number of plays when hours and weekend are used as the predictors. Since Ridge regression generally handles multicollinearity and distributes coefficient weights more evenly than Lasso regression, we can infer that both the predictors (weekend and hours) might be influential in contributing to the model. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
+> Looking at the outputs of both models in A3, we observe that the lasso regression model (model1) achieved a lower MSE compared to the ridge ridge model (model2). This suggests that the lasso regression model performed better in predicting the number of plays when hours and weekend are used as the predictors. Since lasso regression generally shrinks less informative predictors to zero, this suggests that either “weekend” or “hour” has relatively little influence on predicting the number of plays compared to the other. From the Hypothesis test we achieved a p-value of 0.03167 which is less than the significance value of alpha = 0.05, which means we achieved a result that was not significant enough. Thus, we fail to reject the null hypothesis that “Love Story” was played significantly more.
 
 ------------------------------------------------------------------------
 
