@@ -339,21 +339,6 @@ p_value
 
 t.test(ts_sample_5 - 0, alternative = "greater")
 
-# love_you = ts_plays |>
-#   filter(song %in% c('Love Story', 'You Belong With Me')) |>
-#   group_by(swiftie, song) |>
-#   summarize(n = n(), .groups = "drop") |>
-#   pivot_wider(names_from = song, values_from = n, values_fill = 0)
-# love_you
-# swiftie_samples = sample(love_you$swiftie, 25, replace=FALSE)
-# 
-# sampled = love_you |>
-#   filter(swiftie %in% swiftie_samples)
-# 
-# res = t.test(sampled$`Love Story`, sampled$`You Belong With Me`, 
-#                         paired = TRUE, alternative = "greater")
-# res
-
 paste("Since the p-value (0.03167) is less than the alpha value (0.05), we reject the null hypothesis. From this, we can infer Love Story is likely to be played more than You Belong With Me.")
 
 ```
